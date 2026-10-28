@@ -12,18 +12,24 @@ on pull requests, manually (Actions -> Run workflow) and on releases.
 4. VHUD: if you committed `libVHUD32.so` and/or `libVHUD64.so` (anywhere in the repo, `prebuilt/armeabi-v7a/` and
    `prebuilt/arm64-v8a/` are the intended places), that ABI is **not** recompiled; the uploaded file is checked
    (32-bit ARM vs arm64) and packaged. Any ABI without an uploaded lib is compiled from `vhud/src`.
-5. Uploads the artifact **VHUD-Android** (`armeabi-v7a/`, `arm64-v8a/`, `VHud-assets/`, `BUILD_INFO.txt` with SHA-256 and
-   which libs were uploaded vs built). On a published release the zip is attached to the release.
+5. Uploads the artifact **VHUD-Android**, laid out like the phone (see `mods/INSTALL.md` inside for the tutorial):
+   - `mods/` - `libVHUD32.so`, `libVHUD64.so`, `libDearImGui.so`, `libSAUtils*.so` (if available) and **`INSTALL.md`** -> `Android/data/<game package>/mods/`
+   - `files/VHud/` - the assets (upstream `v-hud/resources` + everything in your `assets/` folder) -> `Android/data/<game package>/files/`
+   - `loader/<abi>/libAML.so` - the loader, only for APKs that do not have AML yet
+   - `BUILD_INFO.txt` - SHA-256 and whether each lib was uploaded or built
+   On a published release the zip is attached to the release.
 
 SAUtils and the ImGui plugin are `continue-on-error`: if one fails, the rest still packages.
 - **SAUtils** needs the private `GTASA_STRUCTS.h` / `GTASA_STRUCTS_210.h`. Drop them in `deps/structs/`, or add a repo
-  secret named `SSH` (deploy key with access to `RusJJ/GTASAAndroid_Structs`). Without them SAUtils is skipped, not failed.
+  secret named `SSH` (deploy key with access to `RusJJ/GTASAAndroid_Structs`). Without them SAUtils is skipped (you get a notice, not a warning) - or upload a prebuilt `libSAUtils.so` / `libSAUtils64.so` anywhere in the repo and it is packaged into `mods/`.
 - **ImGui plugin** uses its own `RW/` headers (it no longer includes `aml-psdk`, which clashed with them).
 
 ## Layout
 - `deps/` - your uploaded sources (AndroidModLoader, SAUtils, CLEO_ImGui, ARMPatch.cpp/.h, ASM helpers)
 - `vhud/` - the Android port of V HUD (`src/`, `Android.mk`, `Application.mk`) - see `PORTING.md`
-- `prebuilt/` - drop `libVHUD32.so` / `libVHUD64.so` here
+- `prebuilt/` - drop `libVHUD32.so` / `libVHUD64.so` here (a prebuilt `libSAUtils.so` / `libSAUtils64.so` works too)
+- `assets/` - your own assets, copied to `files/VHud/`
+- `templates/INSTALL.md` - the tutorial that ends up in `mods/`
 - `scripts/` - `fetch-deps.sh`, `assemble.sh`, `build-vhud.sh`, `package.sh` (the same steps run locally if the NDK is on PATH)
 
 ## Not included on purpose
