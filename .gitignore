@@ -1,0 +1,6 @@
+work/
+dist/
+external/
+obj/
+libs/
+*.o

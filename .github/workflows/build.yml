@@ -1,0 +1,92 @@
+name: VHUD Android - NDK build
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - '**/libVHUD32.so'
+      - '**/libVHUD64.so'
+      - 'prebuilt/**'
+      - 'vhud/**'
+      - 'deps/**'
+      - 'scripts/**'
+      - '.github/workflows/build.yml'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+  release:
+    types: [ published ]
+
+env:
+  OWNER: ThirtyFoxMCx00E1
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clone the other repos (v-hud, Psdk-aml, ARMPatch, AML_PrecompiledLibs, AML_ImGui)
+        run: bash scripts/fetch-deps.sh
+
+      - name: Install Android NDK r24
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r24
+          # no local-cache: caching breaks the Unwind lib (same note as in AML's own workflow)
+
+      - name: Assemble build trees
+        run: bash scripts/assemble.sh
+
+      - name: Build ARMPatch (static lib for AML)
+        working-directory: work/AML
+        run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./ARMPatch/armpatch_src/Android.mk NDK_APPLICATION_MK=./ARMPatch/armpatch_src/Application.mk NDK_DEBUG=0 -j"$(nproc)"
+
+      - name: Build AML (libAML.so)
+        working-directory: work/AML
+        run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk NDK_DEBUG=0 -j"$(nproc)"
+
+      - name: Build SAUtils
+        continue-on-error: true
+        working-directory: work/SAUtils
+        run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk NDK_DEBUG=0 -j"$(nproc)"
+
+      - name: Build ImGui plugin (32-bit only, as in the source project)
+        continue-on-error: true
+        working-directory: work/ImGui/jni
+        run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk NDK_DEBUG=0 -j"$(nproc)"
+
+      - name: Build VHUD (only the ABIs that have no uploaded libVHUD32.so / libVHUD64.so)
+        run: bash scripts/build-vhud.sh
+
+      - name: Package
+        run: bash scripts/package.sh
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: VHUD-Android
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: VHUD-Android
+          path: dist
+      - name: Attach zip to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd dist && zip -r ../VHUD-Android.zip .)
+          gh release upload "${{ github.event.release.tag_name }}" VHUD-Android.zip --clobber --repo "${{ github.repository }}"
