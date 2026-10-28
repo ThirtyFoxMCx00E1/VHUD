@@ -35,10 +35,28 @@ cp -a work/AML/mod     work/SAUtils/mod
 cp -a work/AML/include work/SAUtils/include
 mkdir -p work/SAUtils/AArch64_ModHelper
 cp deps/ASMHelper-lib/*.h work/SAUtils/AArch64_ModHelper/
+# sautils*.cpp include GTASA_STRUCTS.h (32-bit) / GTASA_STRUCTS_210.h (64-bit): private structs.
+# Looked up in deps/structs (yours), external/structs (private repo cloned over SSH) and the cloned repos.
+find_hdr() { find deps/structs external/structs external/Psdk-aml external/AML_ImGui -type f -name "$1" -print -quit 2>/dev/null || true; }
+SABIS=""
+H32="$(find_hdr GTASA_STRUCTS.h)"
+H64="$(find_hdr GTASA_STRUCTS_210.h)"
+if [ -n "$H32" ]; then cp "$H32" work/SAUtils/GTASA_STRUCTS.h;     SABIS="armeabi-v7a"; fi
+if [ -n "$H64" ]; then cp "$H64" work/SAUtils/GTASA_STRUCTS_210.h; SABIS="$SABIS arm64-v8a"; fi
+echo "${SABIS# }" > work/sautils_abis.txt
+echo "SAUtils ABIs with structs available: ${SABIS:-<none - SAUtils will be skipped>}"
 
 # ---------- ImGui plugin ----------
 mkdir -p work/ImGui
 cp -a "deps/CLEO_ImGui/CLEO ImGui/jni" work/ImGui/jni
+# RW/RenderWare.h does #include <aml-psdk/renderware/RwTexture.h>  ->  Psdk-aml must be reachable as ./aml-psdk
+if [ -d external/Psdk-aml ]; then
+  cp -a external/Psdk-aml work/ImGui/jni/aml-psdk && rm -rf work/ImGui/jni/aml-psdk/.git
+  [ -f work/ImGui/jni/aml-psdk/renderware/RwTexture.h ] || echo "::warning::Psdk-aml/renderware/RwTexture.h not found - the ImGui build will probably fail"
+  echo yes > work/imgui_ok.txt
+else
+  echo "::warning::Psdk-aml not cloned - ImGui plugin will be skipped"
+fi
 
 # ---------- VHUD (the port) ----------
 mkdir -p work/VHUD

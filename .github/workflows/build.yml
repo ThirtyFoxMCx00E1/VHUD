@@ -26,12 +26,26 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+    env:
+      HAS_SSH: ${{ secrets.SSH != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Clone the other repos (v-hud, Psdk-aml, ARMPatch, AML_PrecompiledLibs, AML_ImGui)
         run: bash scripts/fetch-deps.sh
+
+      - name: Private GTA structs - SSH key (optional, only if the SSH secret exists)
+        if: env.HAS_SSH == 'true'
+        continue-on-error: true
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH }}
+
+      - name: Private GTA structs - clone (optional)
+        if: env.HAS_SSH == 'true'
+        continue-on-error: true
+        run: git clone --depth 1 ssh://git@github.com/RusJJ/GTASAAndroid_Structs.git external/structs
 
       - name: Install Android NDK r24
         uses: nttld/setup-ndk@v1
@@ -50,15 +64,13 @@ jobs:
         working-directory: work/AML
         run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk NDK_DEBUG=0 -j"$(nproc)"
 
-      - name: Build SAUtils
+      - name: Build SAUtils (skipped when the private GTASA_STRUCTS headers are missing)
         continue-on-error: true
-        working-directory: work/SAUtils
-        run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk NDK_DEBUG=0 -j"$(nproc)"
+        run: bash scripts/build-sautils.sh
 
-      - name: Build ImGui plugin (32-bit only, as in the source project)
+      - name: Build ImGui plugin (32-bit only, needs Psdk-aml)
         continue-on-error: true
-        working-directory: work/ImGui/jni
-        run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk NDK_DEBUG=0 -j"$(nproc)"
+        run: bash scripts/build-imgui.sh
 
       - name: Build VHUD (only the ABIs that have no uploaded libVHUD32.so / libVHUD64.so)
         run: bash scripts/build-vhud.sh

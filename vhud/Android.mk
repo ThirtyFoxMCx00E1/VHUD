@@ -15,8 +15,8 @@ endif
 LOCAL_SRC_FILES := $(patsubst $(LOCAL_PATH)/%,%,$(wildcard $(LOCAL_PATH)/src/*.cpp $(LOCAL_PATH)/src/*/*.cpp))
 LOCAL_SRC_FILES += mod/logger.cpp mod/config.cpp
 
-LOCAL_CFLAGS   += -O2 -DNDEBUG -D__AML
-LOCAL_CXXFLAGS += -O2 -DNDEBUG -D__AML -std=c++17 -fexceptions
+LOCAL_CFLAGS   += -O2 -DNDEBUG
+LOCAL_CXXFLAGS += -O2 -DNDEBUG -std=c++17 -fexceptions
 LOCAL_C_INCLUDES += $(LOCAL_PATH) $(LOCAL_PATH)/include $(LOCAL_PATH)/psdk $(LOCAL_PATH)/AArchASMHelper
 LOCAL_LDLIBS += -llog -ldl -landroid -lEGL -lGLESv2
 include $(BUILD_SHARED_LIBRARY)
