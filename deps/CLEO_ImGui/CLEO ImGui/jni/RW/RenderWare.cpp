@@ -48,6 +48,8 @@ RwRaster* 	(*RwRasterSetFromImage)(RwRaster *raster, RwImage *image);
 RwRaster* 	(*RwRasterRead)(const RwChar *filename);
 RwRaster* 	(*RwRasterReadMaskedRaster)(const RwChar *filename, const RwChar *maskname);
 RwImage* 	(*RwImageFindRasterFormat)(RwImage *ipImage, RwInt32 nRasterType, RwInt32 *npWidth, RwInt32 *npHeight, RwInt32 *npDepth,RwInt32 *npFormat);
+RwTexture* 	(*RwTextureRead)(const RwChar* name, const RwChar* maskName);
+RwBool 		(*RwTextureDestroy)(RwTexture* texture);
 
 /* rwlpcore.h */
 RwReal 		(*RwIm2DGetNearScreenZ)(void);
@@ -109,6 +111,8 @@ void InitRenderWareFunctions()
 	ASSIGN_TO(RwRasterRead, 					_Z12RwRasterReadPKc);
 	ASSIGN_TO(RwRasterReadMaskedRaster, 		_Z24RwRasterReadMaskedRasterPKcS0_);
 	ASSIGN_TO(RwImageFindRasterFormat, 			_Z23RwImageFindRasterFormatP7RwImageiPiS1_S1_S1_);
+	ASSIGN_TO(RwTextureRead, 					_Z13RwTextureReadPKcS0_);
+	ASSIGN_TO(RwTextureDestroy, 				_Z16RwTextureDestroyP9RwTexture);
 
 	/* rwlpcore.h */
 	ASSIGN_TO(RwIm2DGetNearScreenZ, 			_Z20RwIm2DGetNearScreenZv);

@@ -56,3 +56,20 @@ extern RwUInt8* (*RwRasterLock)(RwRaster* raster, RwUInt8 level, RwInt32 lockMod
 extern RwRaster* (*RwRasterSetFromImage)(RwRaster *raster, RwImage *image);
 extern RwImage* (*RwImageFindRasterFormat)(RwImage *ipImage,RwInt32 nRasterType, RwInt32 *npWidth,RwInt32 *npHeight, RwInt32 *npDepth,RwInt32 *npFormat);
 extern RwImage* (*RwImageSetFromRaster)(RwImage *image, RwRaster *raster);
+
+/* RwTexture: only the first member (raster) is used by this plugin; the rest of the
+   RenderWare layout is kept so offsets stay right. Never instantiate it, GTA owns these. */
+typedef struct RwTexture RwTexture;
+struct RwTexture
+{
+    RwRaster *raster;
+    void     *dict;               /* RwTexDictionary* */
+    void     *lInDictionaryNext;  /* RwLLLink */
+    void     *lInDictionaryPrev;
+    RwChar    name[32];
+    RwChar    mask[32];
+    RwUInt32  filterAddressing;
+    RwInt32   refCount;
+};
+extern RwTexture* (*RwTextureRead)(const RwChar* name, const RwChar* maskName);
+extern RwBool     (*RwTextureDestroy)(RwTexture* texture);

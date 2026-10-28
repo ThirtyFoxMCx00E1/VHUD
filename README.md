@@ -18,7 +18,7 @@ on pull requests, manually (Actions -> Run workflow) and on releases.
 SAUtils and the ImGui plugin are `continue-on-error`: if one fails, the rest still packages.
 - **SAUtils** needs the private `GTASA_STRUCTS.h` / `GTASA_STRUCTS_210.h`. Drop them in `deps/structs/`, or add a repo
   secret named `SSH` (deploy key with access to `RusJJ/GTASAAndroid_Structs`). Without them SAUtils is skipped, not failed.
-- **ImGui plugin** needs `Psdk-aml` (it is copied in as `aml-psdk/`, which `RW/RenderWare.h` expects).
+- **ImGui plugin** uses its own `RW/` headers (it no longer includes `aml-psdk`, which clashed with them).
 
 ## Layout
 - `deps/` - your uploaded sources (AndroidModLoader, SAUtils, CLEO_ImGui, ARMPatch.cpp/.h, ASM helpers)

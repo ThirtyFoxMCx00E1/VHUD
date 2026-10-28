@@ -7,7 +7,7 @@
 
 #define NEAR_SCR "_ZN9CSprite2d11NearScreenZE"
 
-enum eGTA : char
+enum class eGTA : char
 {
     WRONG = 0,
     GTA3 = 1,

@@ -49,14 +49,7 @@ echo "SAUtils ABIs with structs available: ${SABIS:-<none - SAUtils will be skip
 # ---------- ImGui plugin ----------
 mkdir -p work/ImGui
 cp -a "deps/CLEO_ImGui/CLEO ImGui/jni" work/ImGui/jni
-# RW/RenderWare.h does #include <aml-psdk/renderware/RwTexture.h>  ->  Psdk-aml must be reachable as ./aml-psdk
-if [ -d external/Psdk-aml ]; then
-  cp -a external/Psdk-aml work/ImGui/jni/aml-psdk && rm -rf work/ImGui/jni/aml-psdk/.git
-  [ -f work/ImGui/jni/aml-psdk/renderware/RwTexture.h ] || echo "::warning::Psdk-aml/renderware/RwTexture.h not found - the ImGui build will probably fail"
-  echo yes > work/imgui_ok.txt
-else
-  echo "::warning::Psdk-aml not cloned - ImGui plugin will be skipped"
-fi
+echo yes > work/imgui_ok.txt
 
 # ---------- VHUD (the port) ----------
 mkdir -p work/VHUD
