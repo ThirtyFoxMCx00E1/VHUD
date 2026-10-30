@@ -8,12 +8,19 @@ on:
       - '**/libVHUD64.so'
       - 'prebuilt/**'
       - 'vhud/**'
+      - 'assets/**'
+      - 'templates/**'
       - 'deps/**'
       - 'scripts/**'
       - '.github/workflows/build.yml'
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
+    inputs:
+      build_tools:
+        description: 'Also build the AML tools (AML, ARMPatch, SAUtils, ImGui) into tools/ - NOT needed for the HUD'
+        type: boolean
+        default: false
   release:
     types: [ published ]
 
@@ -27,23 +34,24 @@ jobs:
     permissions:
       contents: read
     env:
+      BUILD_TOOLS: ${{ inputs.build_tools == true }}
       HAS_SSH: ${{ secrets.SSH != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Clone the other repos (v-hud, Psdk-aml, ARMPatch, AML_PrecompiledLibs, AML_ImGui)
+      - name: Clone the other repos (v-hud for the assets, Psdk-aml; tools only if requested)
         run: bash scripts/fetch-deps.sh
 
-      - name: Private GTA structs - SSH key (optional, only if the SSH secret exists)
-        if: env.HAS_SSH == 'true'
+      - name: Private GTA structs - SSH key (tools build only, optional)
+        if: env.BUILD_TOOLS == 'true' && env.HAS_SSH == 'true'
         continue-on-error: true
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH }}
 
-      - name: Private GTA structs - clone (optional)
-        if: env.HAS_SSH == 'true'
+      - name: Private GTA structs - clone (tools build only, optional)
+        if: env.BUILD_TOOLS == 'true' && env.HAS_SSH == 'true'
         continue-on-error: true
         run: git clone --depth 1 ssh://git@github.com/RusJJ/GTASAAndroid_Structs.git external/structs
 
@@ -56,24 +64,28 @@ jobs:
       - name: Assemble build trees
         run: bash scripts/assemble.sh
 
-      - name: Build ARMPatch (static lib for AML)
+      - name: Build VHUD (only the ABIs that have no uploaded libVHUD32.so / libVHUD64.so)
+        run: bash scripts/build-vhud.sh
+
+      - name: Tools - build ARMPatch (static lib for AML)
+        if: env.BUILD_TOOLS == 'true'
         working-directory: work/AML
         run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./ARMPatch/armpatch_src/Android.mk NDK_APPLICATION_MK=./ARMPatch/armpatch_src/Application.mk NDK_DEBUG=0 -j"$(nproc)"
 
-      - name: Build AML (libAML.so)
+      - name: Tools - build AML (libAML.so)
+        if: env.BUILD_TOOLS == 'true'
         working-directory: work/AML
         run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk NDK_DEBUG=0 -j"$(nproc)"
 
-      - name: Build SAUtils (skipped when the private GTASA_STRUCTS headers are missing)
+      - name: Tools - build SAUtils (skipped when the private GTASA_STRUCTS headers are missing)
+        if: env.BUILD_TOOLS == 'true'
         continue-on-error: true
         run: bash scripts/build-sautils.sh
 
-      - name: Build ImGui plugin (32-bit only)
+      - name: Tools - build ImGui plugin (32-bit only)
+        if: env.BUILD_TOOLS == 'true'
         continue-on-error: true
         run: bash scripts/build-imgui.sh
-
-      - name: Build VHUD (only the ABIs that have no uploaded libVHUD32.so / libVHUD64.so)
-        run: bash scripts/build-vhud.sh
 
       - name: Package
         run: bash scripts/package.sh

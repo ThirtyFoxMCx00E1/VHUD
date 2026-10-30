@@ -3,7 +3,7 @@
 #include <mod/logger.h>
 #include "vhud.h"
 
-MYMOD(net.thirtyfox.vhud, V HUD, 0.1.0, ThirtyFox)
+MYMOD(net.thirtyfox.vhud, V HUD, 0.2.0, ThirtyFox)
 
 uintptr_t pGTASA = 0;
 void*     hGTASA = nullptr;

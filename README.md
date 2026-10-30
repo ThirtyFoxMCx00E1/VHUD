@@ -1,37 +1,35 @@
 # vhud-android
 
-Monorepo that builds the AML tool chain and the V HUD mod for Android with the NDK in GitHub Actions.
+Builds the **V HUD** mod for Android (`libVHUD32.so` + `libVHUD64.so`) with the NDK in GitHub Actions and packages it
+together with the assets and an install guide. `libAML.so` is **not** built or shipped by default: the HUD only needs the
+one already inside your patched APK.
 
 ## What the workflow does (`.github/workflows/build.yml`)
-It runs on push (when `libVHUD32.so`, `libVHUD64.so`, `prebuilt/**`, `vhud/**`, `deps/**` or `scripts/**` change),
-on pull requests, manually (Actions -> Run workflow) and on releases.
+Runs on push (when `libVHUD32.so`, `libVHUD64.so`, `prebuilt/**`, `vhud/**`, `assets/**`, `templates/**`, `deps/**` or
+`scripts/**` change), on pull requests, manually and on releases.
 
-1. Clones the repos that are not vendored: `ARMPatch`, `AML_PrecompiledLibs`, `Psdk-aml`, `v-hud`, `AML_ImGui` (from `ThirtyFoxMCx00E1`).
-2. Installs NDK r24 (same as your AML / SAUtils workflows).
-3. Builds ARMPatch, **libAML.so** (armeabi-v7a + arm64-v8a), **libSAUtils.so / libSAUtils64.so**, the ImGui plugin (32-bit), and **VHUD**.
-4. VHUD: if you committed `libVHUD32.so` and/or `libVHUD64.so` (anywhere in the repo, `prebuilt/armeabi-v7a/` and
-   `prebuilt/arm64-v8a/` are the intended places), that ABI is **not** recompiled; the uploaded file is checked
-   (32-bit ARM vs arm64) and packaged. Any ABI without an uploaded lib is compiled from `vhud/src`.
-5. Uploads the artifact **VHUD-Android**, laid out like the phone (see `mods/INSTALL.md` inside for the tutorial):
-   - `mods/` - `libVHUD32.so`, `libVHUD64.so`, `libDearImGui.so`, `libSAUtils*.so` (if available) and **`INSTALL.md`** -> `Android/data/<game package>/mods/`
-   - `files/VHud/` - the assets (upstream `v-hud/resources` + everything in your `assets/` folder) -> `Android/data/<game package>/files/`
-   - `loader/<abi>/libAML.so` - the loader, only for APKs that do not have AML yet
+1. Clones `v-hud` (for its `resources/`) and `Psdk-aml` from `ThirtyFoxMCx00E1`.
+2. Installs NDK r24 and compiles VHUD for the ABIs that have **no** uploaded lib. If you commit `libVHUD32.so` and/or
+   `libVHUD64.so` (anywhere in the repo; `prebuilt/` is the intended place) that ABI is not recompiled; the file is checked
+   (32-bit ARM vs arm64) and packaged.
+3. Uploads the artifact **VHUD-Android**, laid out like the phone (tutorial in `mods/INSTALL.md`):
+   - `mods/` - `libVHUD32.so`, `libVHUD64.so`, `INSTALL.md` -> `Android/data/<game package>/mods/`
+   - `files/VHud/` - upstream `v-hud/resources` + your `assets/` -> `Android/data/<game package>/files/`
    - `BUILD_INFO.txt` - SHA-256 and whether each lib was uploaded or built
-   On a published release the zip is attached to the release.
 
-SAUtils and the ImGui plugin are `continue-on-error`: if one fails, the rest still packages.
-- **SAUtils** needs the private `GTASA_STRUCTS.h` / `GTASA_STRUCTS_210.h`. Drop them in `deps/structs/`, or add a repo
-  secret named `SSH` (deploy key with access to `RusJJ/GTASAAndroid_Structs`). Without them SAUtils is skipped (you get a notice, not a warning) - or upload a prebuilt `libSAUtils.so` / `libSAUtils64.so` anywhere in the repo and it is packaged into `mods/`.
-- **ImGui plugin** uses its own `RW/` headers (it no longer includes `aml-psdk`, which clashed with them).
+### Optional: tools build
+Actions -> *Run workflow* -> tick **build_tools** to also compile ARMPatch, AML, SAUtils and the ImGui plugin into `tools/`.
+This is not needed for the HUD. `libAML.so` is only packaged if it exports `earlyLaunchAMLCore` like the one in your APK;
+SAUtils needs the private `GTASA_STRUCTS.h` / `GTASA_STRUCTS_210.h` (`deps/structs/` or an `SSH` secret).
 
 ## Layout
-- `deps/` - your uploaded sources (AndroidModLoader, SAUtils, CLEO_ImGui, ARMPatch.cpp/.h, ASM helpers)
+- `deps/` - your uploaded sources (AndroidModLoader headers are used to build the mod; the rest is for the tools build)
 - `vhud/` - the Android port of V HUD (`src/`, `Android.mk`, `Application.mk`) - see `PORTING.md`
-- `prebuilt/` - drop `libVHUD32.so` / `libVHUD64.so` here (a prebuilt `libSAUtils.so` / `libSAUtils64.so` works too)
+- `prebuilt/` - drop `libVHUD32.so` / `libVHUD64.so` here
 - `assets/` - your own assets, copied to `files/VHud/`
 - `templates/INSTALL.md` - the tutorial that ends up in `mods/`
-- `scripts/` - `fetch-deps.sh`, `assemble.sh`, `build-vhud.sh`, `package.sh` (the same steps run locally if the NDK is on PATH)
+- `scripts/` - `fetch-deps.sh`, `assemble.sh`, `build-vhud.sh`, `package.sh`, tool build helpers
 
 ## Not included on purpose
-The game binaries from `arm64-v8a.zip` / `armeabi-v7a.zip` (`libGTASA.so`, `libSCAnd.so`, `libOpenAL64.so`,
-fastman92 libs ...) are Rockstar / third-party files and are not needed to compile; keep them out of a public repo.
+Game binaries (`libGTASA.so`, `libSCAnd.so`, `libOpenAL64.so`, fastman92 libs ...) are Rockstar / third-party files and are
+not needed to compile; keep them out of a public repo.

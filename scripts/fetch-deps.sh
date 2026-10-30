@@ -17,8 +17,10 @@ clone() {  # clone <name> <required|optional> [recurse]
   echo "::warning::could not clone optional repo $url"
 }
 
-clone ARMPatch            required recurse
-clone AML_PrecompiledLibs required recurse
 clone Psdk-aml            optional
-clone v-hud               optional          # NOT recursive: its submodules are the Windows plugin-sdk
-clone AML_ImGui           optional
+clone v-hud               optional          # NOT recursive: its submodules are the Windows plugin-sdk (assets come from resources/)
+if [ "${BUILD_TOOLS:-false}" = true ]; then   # only for the optional tools build
+  clone ARMPatch            required recurse
+  clone AML_PrecompiledLibs required recurse
+  clone AML_ImGui           optional
+fi

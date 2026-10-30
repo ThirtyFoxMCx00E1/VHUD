@@ -1,7 +1,14 @@
 # V HUD -> Android: port status
 
-**Status: scaffold.** `vhud/` builds a valid AML mod (`libVHUD32.so` / `libVHUD64.so`) that loads and logs,
-but installs no hooks yet. The CI, packaging and the 32/64-bit build layout are done; the HUD itself is not.
+**Status: 0.2 - first hooks.** `libVHUD32.so` / `libVHUD64.so` hook `CHud::Draw`, draw a green indicator bar for ~20 s and log the
+arguments of the player-info health/armor bar calls to `files/VHud/vhud.log`. The HUD itself is not replaced yet.
+
+### Verified in your libGTASA.so (both ABIs, `nm -D`)
+`CHud::Draw`, `CHud::DrawRadar`, `CHud::DrawVitalStats`, `CHud::DrawAreaName/HelpText/VehicleName/Subtitles/CrossHairs`,
+`CWidgetPlayerInfo::Draw / RenderHealthBar(int,float) / RenderArmorBar(int,float) / RenderBreathBar / DrawWanted / DrawWeaponIcon / DrawAmmo`,
+`CRadar::DrawRadarMap / DrawRadarMask`, `CSprite2d::DrawRect / Draw`, `CFont::PrintString / SetFontStyle / SetColor`,
+`FindPlayerPed/Wanted/Coors`, `CWorld::Players`, `RsGlobal`. The player struct offsets (health, armor, money) are NOT exported
+and still have to be confirmed: next step is to read them from `vhud.log` / the game binary.
 
 ## What upstream v-hud is
 `gennariarmando/v-hud` (your fork: `ThirtyFoxMCx00E1/v-hud`) is a Windows plugin: Visual Studio 2019 + premake,
